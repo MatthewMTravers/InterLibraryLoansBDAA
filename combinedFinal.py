@@ -85,32 +85,32 @@ def process_data(data):
     query_limit = 5
     query_count = 0
     
-    if 'Title' not in data.columns:
-        data['Title'] = ""
-    if 'Publisher' not in data.columns:
-        data['Publisher'] = ""
-    if 'PublicationYear' not in data.columns:
-        data['PublicationYear'] = ""
-    
     if 'ISSN' in data.columns:
         data['ISSN'] = data['ISSN'].str.replace(' ', '').str.replace('-', '')
         data['ISSN'] = data['ISSN'].replace({'': '0000-0000', 'nan': '0000-0000', '?': '0000-0000'})
         data['ISSN'] = data['ISSN'].apply(lambda x: apply_function_based_on_length(str(x)))
         
         # Iterate through the ISSN and retrieve corresponding data from the API
-        for i, issn in enumerate(data['ISSN']):
-            if issn != '0000-0000' and query_count < query_limit:
-                content = getByISSN(issn)
-                title, publisher, publicationYear = parse_api_response(content)
+        for index, row in data.iterrows():
+            if query_count >= query_limit:
+                break
+            
+            issn = row['ISSN']
+            if issn != '0000-0000':
+                if (len(issn) >= 10):
+                    content = getByISBN(issn)
+                else:
+                    content = getByISSN(issn)
                 
-                # Add the information to the DataFrame
-                data.at[i, 'Title'] = title
-                data.at[i, 'Publisher'] = publisher
-                data.at[i, 'PublicationYear'] = publicationYear
-
-                # Increment query count
-                query_count += 1
-    
+                if content:
+                    title, publisher, publicationYear = parse_api_response(content)
+                    
+                    # Insert the retrieved data into the corresponding columns for the current row
+                    data.at[index, 'Photo Journal Title'] = title
+                    data.at[index, 'Photo Item Publisher'] = publisher
+                    data.at[index, 'Photo Journal Year'] = publicationYear
+                    
+                    query_count += 1
     return data
 
 
